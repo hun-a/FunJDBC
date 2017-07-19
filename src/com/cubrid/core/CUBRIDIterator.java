@@ -52,10 +52,6 @@ public class CUBRIDIterator<T>
     public static <T> Stream<T> stream(final ResultSet resultSet,
                                        final Extractor<T> extractor) {
         CUBRIDIterator<T> iterator = new CUBRIDIterator(resultSet, extractor);
-        return setIterator(iterator);
-    }
-
-    private static <T> Stream<T> setIterator(CUBRIDIterator<T> iterator) {
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, 0), false)
                 .onClose(() -> {
                     try {
