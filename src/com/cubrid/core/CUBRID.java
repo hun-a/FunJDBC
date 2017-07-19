@@ -1,7 +1,9 @@
 package com.cubrid.core;
 
+import javax.xml.bind.DatatypeConverter;
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -78,7 +80,7 @@ public class CUBRID {
                 .rangeClosed(1, param.size())
                 .boxed()
                 .forEach(i -> param
-                        .forEach(p -> setObject(i, p))));
+                        .forEach(p -> bind(i, p))));
         rs = pstmt.executeQuery();
 
         return CUBRIDIterator.stream(rs, extractor).onClose(() -> {
@@ -90,9 +92,18 @@ public class CUBRID {
         });
     }
 
-    private void setObject(int index, Object values) {
+    private void bind(int index, Object value) {
         try {
-            pstmt.setObject(index, values);
+            if (value instanceof Date) {
+                java.sql.Date date = new java.sql.Date(((Date) value).getTime());
+                pstmt.setDate(index, date);
+            } else if (value instanceof String && value.toString().startsWith("X")) {
+                value = ((String) value).replace("X", "").replace("'", "");
+                byte[] bytes = DatatypeConverter.parseHexBinary(value.toString());
+                pstmt.setBytes(index, bytes);
+            } else {
+                pstmt.setObject(index, value);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -102,15 +113,15 @@ public class CUBRID {
         return execute(sql, Optional.empty());
     }
 
-    public <T> int execute(String sql, Optional<List<T>> params)
+    public int execute(String sql, Optional<List<Object>> params)
             throws SQLException {
         conn = getConnection();
         pstmt = conn.prepareStatement(sql);
-        params.ifPresent(param -> IntStream
-                .rangeClosed(1, param.size())
-                .boxed()
-                .forEach(i -> param
-                        .forEach(p -> setObject(i, p))));
+        params.ifPresent(param -> {
+            for (int i = 0; i< param.size(); i++) {
+                bind(i + 1, param.get(i));
+            }
+        });
         int result = pstmt.executeUpdate();
         close();
         return result;

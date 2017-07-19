@@ -3,10 +3,7 @@ package test.cubrid.core;
 import org.junit.*;
 
 import java.sql.Connection;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -23,7 +20,11 @@ public class CUBRIDTest {
         cubrid.init(URL);
         String createSql = "CREATE TABLE IF NOT EXISTS fapi " +
                 "(col1 INT PRIMARY KEY AUTO_INCREMENT," +
-                " col2 DATETIME)";
+                " col2 DATETIME," +
+                " col3 VARCHAR(10)," +
+                " col4 INT," +
+                " col5 DOUBLE," +
+                " col6 BIT VARYING(100))";
         cubrid.execute(createSql);
     }
 
@@ -87,8 +88,8 @@ public class CUBRIDTest {
 
     @Test
     public void insertDatasTest() throws Exception {
-        String sql = "INSERT INTO fapi (col2) VALUES (?)";
-        List<String> params = Arrays.asList("sysdatetime");
+        String sql = "INSERT INTO fapi (col2, col3, col4, col5, col6) VALUES (?, ?, ?, ?, ?)";
+        List<Object> params = Arrays.asList(Date.from(Calendar.getInstance().toInstant()), "Hi Man", 1, 10D, "X'6869206d616e'");
         assertEquals(1, cubrid.execute(sql, Optional.of(params)));
     }
 
